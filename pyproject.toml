@@ -1,14 +1,14 @@
 [project]
-name = "pyroll-plugin-name" # insert the name of yout plugin here
-description = "Plugin for PyRoll providing ..." # edit the description
+name = "pyroll-profile-rounding" # insert the name of yout plugin here
+description = "Plugin for PyRolL providing the model of Lee et al. to model the profile shape after rolling."
 authors = [
-    { name = "Your Name", email = "yourmail@server.com" }
+    { name = "Christoph Renzing", email = "christoph.renzing@imf.tu-freiberg.de" }
 ]
 license = "BSD-3-Clause" # may be changed to your wishes
 requires-python = ">=3.9, <4.0"
 
 dependencies = [
-    "pyroll-core ~= 2.0",
+    "pyroll-core ~= 2.1",
 ]
 
 classifiers = [
@@ -36,8 +36,8 @@ dynamic = ["version"]
 Homepage = "https://pyroll.readthedocs.io"
 
 # change these URLs to your needs
-Repository = "https://github.com/pyroll-project/pyroll-plugin-template"
-Documentation = "https://github.com/pyroll-project/pyroll-plugin-template/blob/main/docs/docs.pdf"
+Repository = "https://github.com/pyroll-project/pyroll-profile-rounding"
+Documentation = "https://github.com/pyroll-project/pyroll-profile-rounding/blob/main/docs/docs.pdf"
 
 [build-system]
 requires = ["hatchling"]
