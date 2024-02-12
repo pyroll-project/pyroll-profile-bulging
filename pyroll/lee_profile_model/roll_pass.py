@@ -16,7 +16,7 @@ def bulge_radius_round_oval(self: RollPass.OutProfile, cycle: bool):
         usable_radius = (rp.roll.groove.r2 * rp.height - 1 / 4 * (
                 rp.roll.groove.usable_width ** 2 + rp.height ** 2)) / (
                                 2 * rp.roll.groove.r2 - rp.roll.groove.usable_width)
-        bulge_radius = rp.in_profile.equvalent_radius * weight + usable_radius * (1 - weight)
+        bulge_radius = rp.in_profile.equivalent_radius * weight + usable_radius * (1 - weight)
         return bulge_radius
 
 
