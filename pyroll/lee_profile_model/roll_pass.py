@@ -1,5 +1,9 @@
-from shapely import Point, unary_union
+import math
+import logging
+import numpy as np
+from shapely import Point, unary_union, intersection
 from pyroll.core import RollPass, Hook
+from pyroll.core.roll_pass.hookimpls.helpers import out_cross_section
 
 RollPass.OutProfile.bulge_radius = Hook[float]()
 
@@ -29,7 +33,8 @@ def bulge_radius_oval_round(self: RollPass.OutProfile, cycle: bool):
     if "oval" in rp.in_profile.classifiers and "round" in rp.classifiers:
 
         oval_radius = rp.prev_of(RollPass).roll.groove.r2
-        weight = (rp.roll.groove.usable_width - self.width) / (rp.roll.groove.usable_width - rp.in_profile.width)
+        weight = (rp.roll.groove.usable_width - self.width) / (
+                    rp.roll.groove.usable_width - rp.in_profile.width)
 
         if rp.height == 2 * rp.roll.groove.r2:
             usable_radius = 2 * rp.roll.groove.r2
@@ -40,15 +45,25 @@ def bulge_radius_oval_round(self: RollPass.OutProfile, cycle: bool):
 
 
 @RollPass.OutProfile.cross_section
-def cross_section(self: RollPass.OutProfile, cycle: bool):
-    if cycle:
-        return None
-
-    cs = self.cross_section
-
+def cross_section(self: RollPass.OutProfile):
     if self.has_value("bulge_radius"):
         circle_center = self.width / 2 - self.bulge_radius
-        left_circle = Point(circle_center, 0).buffer(self.bulge_radius)
-        right_circle = Point(-circle_center, 0).buffer(self.bulge_radius)
-        return unary_union([left_circle, cs, right_circle])
-    return cs
+        right_circle = Point(circle_center, 0).buffer(self.bulge_radius)
+        left_circle = Point(-circle_center, 0).buffer(self.bulge_radius)
+        max_cross_section = out_cross_section(self.roll_pass, math.inf)
+        intersection_points = max_cross_section.boundary.intersection(right_circle.boundary)
+
+        if intersection_points.is_empty:
+            logging.getLogger(__name__).info("No intersection point found. Continuing without bulging.")
+            return None
+
+        else:
+            intersection_points = list(intersection_points.geoms)
+            first_intersection_point = min(intersection_points, key=lambda point: abs(point.y))
+            cross_section_till_intersection = out_cross_section(self.roll_pass, first_intersection_point.x * 2)
+            left_side_cross_section = intersection(max_cross_section, left_circle)
+            right_side_cross_section = intersection(max_cross_section, right_circle)
+            finished_cross_section = unary_union(
+                [left_side_cross_section, cross_section_till_intersection, right_side_cross_section])
+
+            return finished_cross_section
