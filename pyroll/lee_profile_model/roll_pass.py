@@ -34,7 +34,7 @@ def bulge_radius_oval_round(self: RollPass.OutProfile, cycle: bool):
 
         oval_radius = rp.prev_of(RollPass).roll.groove.r2
         weight = (rp.roll.groove.usable_width - self.width) / (
-                    rp.roll.groove.usable_width - rp.in_profile.width)
+                rp.roll.groove.usable_width - rp.in_profile.width)
 
         if rp.height == 2 * rp.roll.groove.r2:
             usable_radius = 2 * rp.roll.groove.r2
@@ -57,13 +57,15 @@ def cross_section(self: RollPass.OutProfile):
             logging.getLogger(__name__).info("No intersection point found. Continuing without bulging.")
             return None
 
+        elif (self.bulge_radius * 2) > (abs(max_cross_section.bounds[0]) + max_cross_section.bounds[2]):
+            circle_intersection = intersection(left_circle, right_circle)
+            return intersection(circle_intersection, max_cross_section)
+
         else:
             intersection_points = list(intersection_points.geoms)
             first_intersection_point = min(intersection_points, key=lambda point: abs(point.y))
-            cross_section_till_intersection = out_cross_section(self.roll_pass, first_intersection_point.x * 2)
+            cross_section_till_intersection = out_cross_section(self.roll_pass, abs(first_intersection_point.x) * 2)
             left_side_cross_section = intersection(max_cross_section, left_circle)
             right_side_cross_section = intersection(max_cross_section, right_circle)
-            finished_cross_section = unary_union(
-                [left_side_cross_section, cross_section_till_intersection, right_side_cross_section])
 
-            return finished_cross_section
+            return unary_union([left_side_cross_section, cross_section_till_intersection, right_side_cross_section])

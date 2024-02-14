@@ -48,7 +48,7 @@ def test_solve(tmp_path: Path, caplog):
                     nominal_radius=160e-3,
                     rotational_frequency=1
                 ),
-                gap=2e-3,
+                gap=4e-3,
             ),
         ]
     )
