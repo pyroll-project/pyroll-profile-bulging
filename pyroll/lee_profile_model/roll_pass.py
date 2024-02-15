@@ -28,7 +28,7 @@ def bulge_radius_round_oval(self: RollPass.OutProfile, cycle: bool):
 def bulge_radius_oval_round(self: RollPass.OutProfile, cycle: bool):
     if cycle:
         return None
-    rp = self.roll_pass
+    rp = self.roll_passt
 
     if "oval" in rp.in_profile.classifiers and "round" in rp.classifiers:
 
