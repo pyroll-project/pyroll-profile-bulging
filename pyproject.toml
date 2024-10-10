@@ -1,6 +1,6 @@
 [project]
-name = "pyroll-profile-rounding" # insert the name of yout plugin here
-description = "Plugin for PyRolL providing the model of Lee et al. to model the profile shape after rolling."
+name = "pyroll-profile-bulging"
+description = "Plugin for PyRolL to model the bulging of profiles after rolling."
 authors = [
     { name = "Christoph Renzing", email = "christoph.renzing@imf.tu-freiberg.de" }
 ]
