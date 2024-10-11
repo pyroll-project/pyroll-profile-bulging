@@ -4,11 +4,11 @@ from pathlib import Path
 from pyroll.core import Profile, Roll, RollPass, Transport, RoundGroove, CircularOvalGroove, PassSequence
 
 
-def test_solve(tmp_path: Path, caplog):
+def test_solve_round_oval_round(tmp_path: Path, caplog):
     caplog.set_level(logging.DEBUG, logger="pyroll")
 
     import pyroll.wusatowski_spreading
-    import pyroll.lee_profile_model
+    import pyroll.profile_bulging
 
     in_profile = Profile.round(
         diameter=30e-3,

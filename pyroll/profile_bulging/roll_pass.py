@@ -1,71 +1,123 @@
-import math
-import logging
-import numpy as np
-from shapely import Point, unary_union, intersection
 from pyroll.core import RollPass, Hook
-from pyroll.core.roll_pass.hookimpls.helpers import out_cross_section
+
+from .helpers import calculate_bulged_cross_section_polygon_round_oval_round, \
+    calculate_bulged_cross_section_polygon_square_diamond_square, \
+    calculate_bulged_cross_section_polygon_square_oval_square
 
 RollPass.OutProfile.bulge_radius = Hook[float]()
 
 
 @RollPass.OutProfile.bulge_radius
-def bulge_radius_round_oval(self: RollPass.OutProfile, cycle: bool):
+def bulge_radius_round_oval_lee(self: RollPass.OutProfile, cycle: bool):
     if cycle:
         return None
 
     rp = self.roll_pass
+    weight = (rp.roll.groove.usable_width - self.width) / (rp.roll.groove.usable_width - rp.in_profile.width)
 
     if "round" in rp.in_profile.classifiers and "oval" in rp.classifiers:
-        weight = (rp.roll.groove.usable_width - self.width) / (rp.roll.groove.usable_width - rp.in_profile.width)
-        usable_radius = (rp.roll.groove.r2 * rp.height - 1 / 4 * (
-                rp.roll.groove.usable_width ** 2 + rp.height ** 2)) / (
-                                2 * rp.roll.groove.r2 - rp.roll.groove.usable_width)
+        usable_radius = (rp.roll.groove.r2 * rp.height - (rp.roll.groove.usable_width ** 2 + rp.height ** 2) / 4) / (
+                2 * rp.roll.groove.r2 - rp.roll.groove.usable_width)
+
         bulge_radius = rp.in_profile.equivalent_radius * weight + usable_radius * (1 - weight)
         return bulge_radius
 
 
 @RollPass.OutProfile.bulge_radius
-def bulge_radius_oval_round(self: RollPass.OutProfile, cycle: bool):
+def bulge_radius_oval_round_lee(self: RollPass.OutProfile, cycle: bool):
     if cycle:
         return None
-    rp = self.roll_passt
+
+    rp = self.roll_pass
+    weight = (rp.roll.groove.usable_width - self.width) / (rp.roll.groove.usable_width - rp.in_profile.width)
 
     if "oval" in rp.in_profile.classifiers and "round" in rp.classifiers:
 
         oval_radius = rp.prev_of(RollPass).roll.groove.r2
-        weight = (rp.roll.groove.usable_width - self.width) / (
-                rp.roll.groove.usable_width - rp.in_profile.width)
 
         if rp.height == 2 * rp.roll.groove.r2:
             usable_radius = 2 * rp.roll.groove.r2
         else:
             usable_radius = rp.roll.groove.r2 + (rp.height - 2 * rp.roll.groove.r2)
 
-        return oval_radius * weight + usable_radius * (1 - weight)
+        bulge_radius = oval_radius * weight + usable_radius * (1 - weight)
+        return bulge_radius
+
+
+@RollPass.OutProfile.bulge_radius
+def bulge_radius_square_diamond_schmidt(self: RollPass.OutProfile, cycle: bool):
+    if cycle:
+        return None
+
+    rp = self.roll_pass
+    half_roll_pass_height = rp.height / 2
+    half_profile_width = self.width / 2
+    bulge_radius = (
+                           half_roll_pass_height ** 2 + half_profile_width ** 2 - 2 * rp.roll.groove.r2 * half_roll_pass_height) / (
+                           2 * (half_profile_width - rp.roll.groove.r2))
+
+    if "square" in rp.in_profile.classifiers and "diamond" in rp.classifiers:
+        return bulge_radius
+
+
+@RollPass.OutProfile.bulge_radius
+def bulge_radius_diamond_square_schmidt(self: RollPass.OutProfile, cycle: bool):
+    if cycle:
+        return None
+
+    rp = self.roll_pass
+    half_roll_pass_height = rp.height / 2
+    half_profile_width = self.width / 2
+    bulge_radius = (
+                           half_roll_pass_height ** 2 + half_profile_width ** 2 - 2 * rp.roll.groove.r2 * half_roll_pass_height) / (
+                           2 * (half_profile_width - rp.roll.groove.r2))
+
+    if "diamond" in rp.in_profile.classifiers and "square" in rp.classifiers:
+        return bulge_radius
+
+
+@RollPass.OutProfile.bulge_radius
+def bulge_radius_oval_square_oval_schmidt(self: RollPass.OutProfile, cycle: bool):
+    if cycle:
+        return None
+
+    rp = self.roll_pass
+    half_roll_pass_height = rp.height / 2
+    half_profile_width = self.width / 2
+    bulge_radius = (
+                           half_roll_pass_height ** 2 + half_profile_width ** 2 - 2 * rp.roll.groove.r2 * half_roll_pass_height) / (
+                           2 * (half_profile_width - rp.roll.groove.r2))
+
+    if "oval" in rp.in_profile.classifiers and "square" in rp.classifiers:
+        return bulge_radius
+
+    if "square" in rp.in_profile.classifiers and "oval" in rp.classifiers:
+        return bulge_radius
 
 
 @RollPass.OutProfile.cross_section
 def cross_section(self: RollPass.OutProfile):
-    if self.has_value("bulge_radius"):
-        circle_center = self.width / 2 - self.bulge_radius
-        right_circle = Point(circle_center, 0).buffer(self.bulge_radius)
-        left_circle = Point(-circle_center, 0).buffer(self.bulge_radius)
-        max_cross_section = out_cross_section(self.roll_pass, math.inf)
-        intersection_points = max_cross_section.boundary.intersection(right_circle.boundary)
+    rp = self.roll_pass
 
-        if intersection_points.is_empty:
-            logging.getLogger(__name__).info("No intersection point found. Continuing without bulging.")
-            return None
+    if "square" in rp.in_profile.classifiers and "diamond" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_square_diamond_square(profile=self)
 
-        elif (self.bulge_radius * 2) > (abs(max_cross_section.bounds[0]) + max_cross_section.bounds[2]):
-            circle_intersection = intersection(left_circle, right_circle)
-            return intersection(circle_intersection, max_cross_section)
+    elif "diamond" in rp.in_profile.classifiers and "square" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_square_diamond_square(profile=self)
 
-        else:
-            intersection_points = list(intersection_points.geoms)
-            first_intersection_point = min(intersection_points, key=lambda point: abs(point.y))
-            cross_section_till_intersection = out_cross_section(self.roll_pass, abs(first_intersection_point.x) * 2)
-            left_side_cross_section = intersection(max_cross_section, left_circle)
-            right_side_cross_section = intersection(max_cross_section, right_circle)
+    elif "round" in rp.in_profile.classifiers and "oval" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_round_oval_round(profile=self)
 
-            return unary_union([left_side_cross_section, cross_section_till_intersection, right_side_cross_section])
+    elif "oval" in rp.in_profile.classifiers and "round" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_round_oval_round(profile=self)
+
+    elif "square" in rp.in_profile.classifiers and "oval" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_square_diamond_square(profile=self)
+
+    elif "oval" in rp.in_profile.classifiers and "square" in rp.classifiers:
+        bulged_cross_section = calculate_bulged_cross_section_polygon_square_oval_square(profile=self)
+
+    else:
+        bulged_cross_section = self.cross_section
+
+    return bulged_cross_section
