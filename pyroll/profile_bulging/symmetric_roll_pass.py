@@ -92,7 +92,7 @@ class BulgingModel(Unit):
         circle_center = profile.width / 2 - profile.bulge_radius
         right_circle = Point(circle_center, 0).buffer(profile.bulge_radius)
         left_circle = Point(-circle_center, 0).buffer(profile.bulge_radius)
-        max_cross_section = out_cross_section(profile.roll_pass, math.inf)
+        max_cross_section = out_cross_section(self.symmetric_roll_pass, math.inf)
         intersection_points = max_cross_section.boundary.intersection(right_circle.boundary)
 
         if intersection_points.is_empty:
@@ -107,7 +107,7 @@ class BulgingModel(Unit):
         else:
             intersection_points = list(intersection_points.geoms)
             first_intersection_point = min(intersection_points, key=lambda point: abs(point.y))
-            cross_section_till_intersection = out_cross_section(profile.roll_pass,
+            cross_section_till_intersection = out_cross_section(self.symmetric_roll_pass,
                                                                 abs(first_intersection_point.x) * 2)
             left_side_cross_section = intersection(max_cross_section, left_circle)
             right_side_cross_section = intersection(max_cross_section, right_circle)
